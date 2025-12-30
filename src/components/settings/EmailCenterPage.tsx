@@ -21,15 +21,15 @@ const EmailCenterPage = () => {
         <TabsList className="grid w-full grid-cols-3 max-w-md">
           <TabsTrigger value="templates" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Templates</span>
+            <span className="sr-only sm:not-sr-only">Templates</span>
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center gap-2">
             <History className="h-4 w-4" />
-            <span className="hidden sm:inline">History</span>
+            <span className="sr-only sm:not-sr-only">History</span>
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
-            <span className="hidden sm:inline">Analytics</span>
+            <span className="sr-only sm:not-sr-only">Analytics</span>
           </TabsTrigger>
         </TabsList>
 
