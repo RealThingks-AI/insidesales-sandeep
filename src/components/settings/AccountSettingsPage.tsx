@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,7 +16,8 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import {
   User, Mail, Phone, Globe, Loader2, Key, Bell, Settings, Sun, Moon, 
-  Check, X, Monitor, Smartphone, Tablet, Clock, MapPin, LogOut, RefreshCw
+  Check, X, Monitor, Smartphone, Tablet, Clock, MapPin, LogOut, RefreshCw,
+  Eye, EyeOff, Trash2
 } from 'lucide-react';
 import {
   Dialog,
@@ -77,6 +78,7 @@ interface DisplayPrefs {
 
 interface Session {
   id: string;
+  session_token: string;
   ip_address: string | null;
   user_agent: string | null;
   device_info: {
@@ -104,9 +106,19 @@ const AccountSettingsPage = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [currentSessionToken, setCurrentSessionToken] = useState<string | null>(null);
   const [loadingSessions, setLoadingSessions] = useState(true);
   const [terminatingSession, setTerminatingSession] = useState<string | null>(null);
   const [showTerminateAllDialog, setShowTerminateAllDialog] = useState(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [removingAvatar, setRemovingAvatar] = useState(false);
+
+  // Track initial values to detect changes
+  const initialDataRef = useRef<{
+    profile: ProfileData;
+    notificationPrefs: NotificationPrefs;
+    displayPrefs: DisplayPrefs;
+  } | null>(null);
 
   const [profile, setProfile] = useState<ProfileData>({
     full_name: '',
@@ -139,6 +151,21 @@ const AccountSettingsPage = () => {
     confirmPassword: ''
   });
 
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = useCallback(() => {
+    if (!initialDataRef.current) return false;
+    const { profile: initProfile, notificationPrefs: initNotif, displayPrefs: initDisplay } = initialDataRef.current;
+    
+    return (
+      JSON.stringify(profile) !== JSON.stringify(initProfile) ||
+      JSON.stringify(notificationPrefs) !== JSON.stringify(initNotif) ||
+      JSON.stringify(displayPrefs) !== JSON.stringify(initDisplay)
+    );
+  }, [profile, notificationPrefs, displayPrefs]);
+
   // Password validation
   const passwordRequirements: PasswordRequirement[] = [
     { label: 'At least 8 characters', met: passwordData.newPassword.length >= 8 },
@@ -152,11 +179,33 @@ const AccountSettingsPage = () => {
   const passwordsMatch = passwordData.newPassword === passwordData.confirmPassword && passwordData.confirmPassword.length > 0;
   const passwordStrength = (passwordRequirements.filter(req => req.met).length / passwordRequirements.length) * 100;
 
+  // Warn user before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges()) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   useEffect(() => {
     if (user) {
       fetchAllData();
+      fetchCurrentSessionToken();
     }
   }, [user]);
+
+  const fetchCurrentSessionToken = async () => {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.access_token) {
+      // Use a hash or portion of the token for comparison
+      setCurrentSessionToken(data.session.access_token.substring(0, 20));
+    }
+  };
 
   const fetchAllData = async () => {
     if (!user) return;
@@ -170,15 +219,14 @@ const AccountSettingsPage = () => {
         .eq('id', user.id)
         .single();
 
-      if (profileData) {
-        setProfile({
-          full_name: profileData.full_name || user.user_metadata?.full_name || '',
-          email: profileData['Email ID'] || user.email || '',
-          phone: profileData.phone || '',
-          timezone: profileData.timezone || 'Asia/Kolkata',
-          avatar_url: profileData.avatar_url || ''
-        });
-      }
+      const loadedProfile: ProfileData = {
+        full_name: profileData?.full_name || user.user_metadata?.full_name || '',
+        email: profileData?.['Email ID'] || user.email || '',
+        phone: profileData?.phone || '',
+        timezone: profileData?.timezone || 'Asia/Kolkata',
+        avatar_url: profileData?.avatar_url || ''
+      };
+      setProfile(loadedProfile);
 
       // Fetch notification preferences
       const { data: notifData } = await supabase
@@ -187,18 +235,17 @@ const AccountSettingsPage = () => {
         .eq('user_id', user.id)
         .single();
 
-      if (notifData) {
-        setNotificationPrefs({
-          email_notifications: notifData.email_notifications ?? true,
-          in_app_notifications: notifData.in_app_notifications ?? true,
-          push_notifications: notifData.push_notifications ?? false,
-          lead_assigned: notifData.lead_assigned ?? true,
-          deal_updates: notifData.deal_updates ?? true,
-          task_reminders: notifData.task_reminders ?? true,
-          meeting_reminders: notifData.meeting_reminders ?? true,
-          weekly_digest: notifData.weekly_digest ?? false,
-        });
-      }
+      const loadedNotifPrefs: NotificationPrefs = {
+        email_notifications: notifData?.email_notifications ?? true,
+        in_app_notifications: notifData?.in_app_notifications ?? true,
+        push_notifications: notifData?.push_notifications ?? false,
+        lead_assigned: notifData?.lead_assigned ?? true,
+        deal_updates: notifData?.deal_updates ?? true,
+        task_reminders: notifData?.task_reminders ?? true,
+        meeting_reminders: notifData?.meeting_reminders ?? true,
+        weekly_digest: notifData?.weekly_digest ?? false,
+      };
+      setNotificationPrefs(loadedNotifPrefs);
 
       // Fetch display preferences
       const { data: displayData } = await supabase
@@ -207,14 +254,20 @@ const AccountSettingsPage = () => {
         .eq('user_id', user.id)
         .single();
 
-      if (displayData) {
-        setDisplayPrefs({
-          date_format: displayData.date_format || 'DD/MM/YYYY',
-          time_format: displayData.time_format || '12h',
-          currency: displayData.currency || 'INR',
-          default_module: displayData.default_module || 'dashboard',
-        });
-      }
+      const loadedDisplayPrefs: DisplayPrefs = {
+        date_format: displayData?.date_format || 'DD/MM/YYYY',
+        time_format: displayData?.time_format || '12h',
+        currency: displayData?.currency || 'INR',
+        default_module: displayData?.default_module || 'dashboard',
+      };
+      setDisplayPrefs(loadedDisplayPrefs);
+
+      // Store initial values
+      initialDataRef.current = {
+        profile: loadedProfile,
+        notificationPrefs: loadedNotifPrefs,
+        displayPrefs: loadedDisplayPrefs
+      };
 
       // Fetch sessions
       await fetchSessions();
@@ -282,6 +335,13 @@ const AccountSettingsPage = () => {
         updated_at: new Date().toISOString(),
       });
 
+      // Update initial values after successful save
+      initialDataRef.current = {
+        profile,
+        notificationPrefs,
+        displayPrefs
+      };
+
       toast.success('All settings saved successfully');
     } catch (error) {
       console.error('Error saving settings:', error);
@@ -318,6 +378,11 @@ const AccountSettingsPage = () => {
     }
   };
 
+  const isCurrentSession = (session: Session) => {
+    // Compare session tokens to identify current session
+    return session.session_token?.substring(0, 20) === currentSessionToken;
+  };
+
   const terminateSession = async (sessionId: string) => {
     try {
       const { error } = await supabase
@@ -340,11 +405,14 @@ const AccountSettingsPage = () => {
     if (!user) return;
 
     try {
+      // Get current session to exclude it
+      const currentSession = sessions.find(s => isCurrentSession(s));
+      
       const { error } = await supabase
         .from('user_sessions')
         .update({ is_active: false })
         .eq('user_id', user.id)
-        .neq('id', sessions[0]?.id || '');
+        .neq('id', currentSession?.id || '');
 
       if (error) throw error;
 
@@ -371,8 +439,32 @@ const AccountSettingsPage = () => {
         .getPublicUrl(filePath);
       setProfile(p => ({ ...p, avatar_url: urlData.publicUrl + '?t=' + Date.now() }));
       toast.success('Profile picture updated');
+    } catch (error: any) {
+      if (error.message?.includes('bucket')) {
+        toast.error('Avatar storage is not configured. Please contact support.');
+      } else {
+        toast.error('Failed to upload profile picture');
+      }
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!user || !profile.avatar_url) return;
+    setRemovingAvatar(true);
+    
+    try {
+      // Remove from storage
+      const { error: deleteError } = await supabase.storage
+        .from('avatars')
+        .remove([`${user.id}/avatar.png`, `${user.id}/avatar.jpg`, `${user.id}/avatar.jpeg`, `${user.id}/avatar.webp`]);
+      
+      // Update profile
+      setProfile(p => ({ ...p, avatar_url: '' }));
+      toast.success('Profile picture removed');
     } catch (error) {
-      toast.error('Failed to upload profile picture');
+      toast.error('Failed to remove profile picture');
+    } finally {
+      setRemovingAvatar(false);
     }
   };
 
@@ -413,6 +505,16 @@ const AccountSettingsPage = () => {
 
   return (
     <div className="space-y-6 max-w-4xl">
+      {/* Unsaved Changes Indicator */}
+      {hasUnsavedChanges() && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 flex items-center justify-between">
+          <p className="text-sm text-amber-800 dark:text-amber-200">You have unsaved changes</p>
+          <Button size="sm" onClick={handleSaveAll} disabled={saving}>
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Save Now'}
+          </Button>
+        </div>
+      )}
+
       {/* Profile Section */}
       <Card>
         <CardHeader className="pb-3">
@@ -442,7 +544,22 @@ const AccountSettingsPage = () => {
                   <span className="text-white text-xs">Change</span>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-1 text-center">Click to change</p>
+              <div className="flex flex-col items-center gap-1 mt-1">
+                <p className="text-xs text-muted-foreground">Click to change</p>
+                {profile.avatar_url && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs text-destructive hover:text-destructive"
+                    onClick={handleRemoveAvatar}
+                    disabled={removingAvatar}
+                    aria-label="Remove profile picture"
+                  >
+                    {removingAvatar ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3 mr-1" />}
+                    Remove
+                  </Button>
+                )}
+              </div>
             </div>
 
             <div className="flex-1 grid gap-3 md:grid-cols-2">
@@ -543,11 +660,11 @@ const AccountSettingsPage = () => {
                 <p className="text-xs text-muted-foreground">Manage your logged-in devices</p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={fetchSessions} disabled={loadingSessions}>
+                <Button variant="outline" size="sm" onClick={fetchSessions} disabled={loadingSessions} aria-label="Refresh sessions">
                   <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loadingSessions ? 'animate-spin' : ''}`} />
                   Refresh
                 </Button>
-                {sessions.length > 1 && (
+                {sessions.filter(s => !isCurrentSession(s)).length > 0 && (
                   <Button variant="destructive" size="sm" onClick={() => setShowTerminateAllDialog(true)}>
                     <LogOut className="h-3.5 w-3.5 mr-1.5" />
                     Sign Out All Others
@@ -564,9 +681,9 @@ const AccountSettingsPage = () => {
               <p className="text-center text-sm text-muted-foreground py-4">No active sessions found</p>
             ) : (
               <div className="space-y-2">
-                {sessions.map((session, index) => {
+                {sessions.map((session) => {
                   const { browser, os } = parseUserAgent(session.user_agent);
-                  const isCurrentSession = index === 0;
+                  const isCurrent = isCurrentSession(session);
                   return (
                     <div key={session.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex items-center gap-3">
@@ -574,7 +691,7 @@ const AccountSettingsPage = () => {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">{browser} on {os}</span>
-                            {isCurrentSession && <Badge variant="secondary" className="text-xs">Current</Badge>}
+                            {isCurrent && <Badge variant="secondary" className="text-xs">Current</Badge>}
                           </div>
                           <div className="flex items-center gap-3 text-xs text-muted-foreground">
                             {session.ip_address && (
@@ -589,12 +706,13 @@ const AccountSettingsPage = () => {
                           </div>
                         </div>
                       </div>
-                      {!isCurrentSession && (
+                      {!isCurrent && (
                         <Button
                           variant="ghost"
                           size="sm"
                           className="text-destructive hover:text-destructive"
                           onClick={() => setTerminatingSession(session.id)}
+                          aria-label={`Sign out ${browser} on ${os}`}
                         >
                           <LogOut className="h-4 w-4" />
                         </Button>
@@ -773,6 +891,8 @@ const AccountSettingsPage = () => {
       <Dialog open={showPasswordModal} onOpenChange={() => {
         setShowPasswordModal(false);
         setPasswordData({ newPassword: '', confirmPassword: '' });
+        setShowNewPassword(false);
+        setShowConfirmPassword(false);
       }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -785,15 +905,27 @@ const AccountSettingsPage = () => {
           <form onSubmit={handlePasswordChange} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="newPassword" className="text-xs">New Password</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                value={passwordData.newPassword}
-                onChange={e => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
-                placeholder="Enter new password"
-                className="h-9"
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={passwordData.newPassword}
+                  onChange={e => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                  placeholder="Enter new password"
+                  className="h-9 pr-10"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-9 w-9 px-2"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
               
               {passwordData.newPassword.length > 0 && (
                 <div className="space-y-2 mt-2">
@@ -822,15 +954,27 @@ const AccountSettingsPage = () => {
             
             <div className="space-y-1.5">
               <Label htmlFor="confirmPassword" className="text-xs">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={passwordData.confirmPassword}
-                onChange={e => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                placeholder="Confirm new password"
-                className="h-9"
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={passwordData.confirmPassword}
+                  onChange={e => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  placeholder="Confirm new password"
+                  className="h-9 pr-10"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-9 w-9 px-2"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
               {passwordData.confirmPassword.length > 0 && (
                 <div className="flex items-center gap-1.5 text-xs mt-1">
                   {passwordsMatch ? (
