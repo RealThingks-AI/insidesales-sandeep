@@ -8,7 +8,6 @@ import { useAuth } from "@/hooks/useAuth";
 import SecurityEnhancedApp from "@/components/SecurityEnhancedApp";
 import { AppSidebar } from "@/components/AppSidebar";
 import PageAccessGuard from "@/components/PageAccessGuard";
-import { GlobalSearch } from "@/components/GlobalSearch";
 import Dashboard from "./pages/Dashboard";
 import Accounts from "./pages/Accounts";
 import Contacts from "./pages/Contacts";
@@ -24,7 +23,7 @@ import { useState } from "react";
 
 const queryClient = new QueryClient();
 
-// Layout Component for all pages with fixed sidebar and sticky header
+// Layout Component for all pages with fixed sidebar
 const FixedSidebarLayout = ({ children }: { children: React.ReactNode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false); // Start collapsed
   
@@ -34,19 +33,14 @@ const FixedSidebarLayout = ({ children }: { children: React.ReactNode }) => {
         <AppSidebar isFixed={true} isOpen={sidebarOpen} onToggle={setSidebarOpen} />
       </div>
       <main 
-        className="flex-1 flex flex-col bg-background min-h-screen"
+        className="flex-1 bg-background min-h-screen"
         style={{ 
           marginLeft: sidebarOpen ? '200px' : '64px',
           transition: 'margin-left 300ms ease-in-out',
           width: `calc(100vw - ${sidebarOpen ? '200px' : '64px'})`
         }}
       >
-        {/* Fixed Header with Global Search */}
-        <div className="sticky top-0 z-40 h-14 flex items-center px-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <GlobalSearch />
-        </div>
-        {/* Scrollable Content Area */}
-        <div className="flex-1 w-full overflow-auto">
+        <div className="w-full h-full overflow-auto">
           {children}
         </div>
       </main>
