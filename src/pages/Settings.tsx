@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { User, Shield, Mail } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -40,6 +40,47 @@ const Settings = () => {
 
   const visibleTabs = tabs.filter(tab => !tab.adminOnly || isAdmin);
 
+  // Handle keyboard navigation
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, currentIndex: number) => {
+    const tabCount = visibleTabs.length;
+    let newIndex = currentIndex;
+
+    switch (e.key) {
+      case 'ArrowLeft':
+        e.preventDefault();
+        newIndex = currentIndex === 0 ? tabCount - 1 : currentIndex - 1;
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        newIndex = currentIndex === tabCount - 1 ? 0 : currentIndex + 1;
+        break;
+      case 'Home':
+        e.preventDefault();
+        newIndex = 0;
+        break;
+      case 'End':
+        e.preventDefault();
+        newIndex = tabCount - 1;
+        break;
+      default:
+        return;
+    }
+
+    const newTab = visibleTabs[newIndex];
+    setActiveTab(newTab.id);
+    
+    // Focus the new tab button
+    const tabElement = document.getElementById(`tab-${newTab.id}`);
+    tabElement?.focus();
+  }, [visibleTabs]);
+
+  // Redirect to account tab if not admin and on admin tab
+  useEffect(() => {
+    if (!isAdmin && activeTab === 'admin') {
+      setActiveTab('account');
+    }
+  }, [isAdmin, activeTab]);
+
   const renderContent = () => {
     switch (activeTab) {
       case "account":
@@ -58,26 +99,31 @@ const Settings = () => {
       {/* Tab Navigation */}
       <div className="flex-shrink-0 border-b bg-background">
         <div className="px-6 pt-4">
-          <nav className="flex gap-1" role="tablist">
-            {visibleTabs.map((tab) => {
+          <nav className="flex gap-1" role="tablist" aria-label="Settings sections">
+            {visibleTabs.map((tab, index) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
 
               return (
                 <button
                   key={tab.id}
+                  id={`tab-${tab.id}`}
                   role="tab"
                   aria-selected={isActive}
+                  aria-controls={`tabpanel-${tab.id}`}
+                  tabIndex={isActive ? 0 : -1}
                   onClick={() => setActiveTab(tab.id)}
+                  onKeyDown={(e) => handleKeyDown(e, index)}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-[1px] transition-colors",
+                    "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-[1px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     isActive
                       ? "border-primary text-primary"
                       : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
                   )}
                 >
                   <Icon className="h-4 w-4" />
-                  {tab.label}
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sr-only sm:hidden">{tab.label}</span>
                 </button>
               );
             })}
@@ -87,7 +133,13 @@ const Settings = () => {
 
       {/* Content Area */}
       <ScrollArea className="flex-1">
-        <div className="p-6">
+        <div 
+          className="p-6"
+          id={`tabpanel-${activeTab}`}
+          role="tabpanel"
+          aria-labelledby={`tab-${activeTab}`}
+          tabIndex={0}
+        >
           {renderContent()}
         </div>
       </ScrollArea>

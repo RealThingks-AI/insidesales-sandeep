@@ -789,9 +789,9 @@ const AccountSettingsPage = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
-            <div className="space-y-1.5">
+          <div className="space-y-1.5">
               <Label className="text-xs">Theme</Label>
-              <Select value={theme} onValueChange={setTheme}>
+              <Select value={theme} onValueChange={(value) => setTheme(value as 'light' | 'dark' | 'system')}>
                 <SelectTrigger className="h-9">
                   <SelectValue />
                 </SelectTrigger>
@@ -801,6 +801,9 @@ const AccountSettingsPage = () => {
                   </SelectItem>
                   <SelectItem value="dark">
                     <div className="flex items-center gap-2"><Moon className="h-3.5 w-3.5" />Dark</div>
+                  </SelectItem>
+                  <SelectItem value="system">
+                    <div className="flex items-center gap-2"><Monitor className="h-3.5 w-3.5" />System</div>
                   </SelectItem>
                 </SelectContent>
               </Select>
