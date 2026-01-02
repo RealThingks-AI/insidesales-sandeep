@@ -1749,8 +1749,8 @@ const UserDashboard = ({ hideHeader = false }: UserDashboardProps) => {
 
   return (
     <div className="px-2 sm:px-4 py-4 space-y-4 w-full overflow-x-hidden" ref={containerRef}>
-      {/* Customize Controls - sticky header */}
-      <div className="flex items-center justify-between flex-wrap gap-4 sticky top-0 z-40 bg-background py-2 -mt-2 border-b border-border/50">
+      {/* Fixed header for search and controls */}
+      <div className="fixed top-[57px] left-0 md:left-64 right-0 z-40 bg-background py-3 px-4 border-b border-border/50 flex items-center justify-between flex-wrap gap-4">
         {/* Global Search - Left Side */}
         <div className="flex-1 max-w-md">
           <GlobalSearch />
@@ -1822,6 +1822,9 @@ const UserDashboard = ({ hideHeader = false }: UserDashboardProps) => {
           )}
         </div>
       </div>
+
+      {/* Spacer for fixed header */}
+      <div className="h-14" />
 
       {/* Resizable Grid Layout */}
       <ResizableDashboard
