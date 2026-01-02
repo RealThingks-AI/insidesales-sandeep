@@ -1748,9 +1748,9 @@ const UserDashboard = ({ hideHeader = false }: UserDashboardProps) => {
   };
 
   return (
-    <div className="px-2 sm:px-4 py-4 space-y-4 w-full overflow-x-hidden" ref={containerRef}>
-      {/* Fixed header for search and controls */}
-      <div className="fixed top-[57px] left-0 md:left-64 right-0 z-40 bg-background py-3 px-4 border-b border-border/50 flex items-center justify-between flex-wrap gap-4">
+    <div className="flex flex-col h-full overflow-hidden" ref={containerRef}>
+      {/* Search bar header - stays fixed at top, never scrolls */}
+      <div className="flex-shrink-0 px-2 sm:px-4 py-3 border-b border-border/50 bg-background flex items-center justify-between flex-wrap gap-4">
         {/* Global Search - Left Side */}
         <div className="flex-1 max-w-md">
           <GlobalSearch />
@@ -1823,11 +1823,9 @@ const UserDashboard = ({ hideHeader = false }: UserDashboardProps) => {
         </div>
       </div>
 
-      {/* Spacer for fixed header */}
-      <div className="h-14" />
-
-      {/* Resizable Grid Layout */}
-      <ResizableDashboard
+      {/* Scrollable widgets area - only this part scrolls */}
+      <div className="flex-1 overflow-auto px-2 sm:px-4 py-4">
+        <ResizableDashboard
         isResizeMode={isResizeMode}
         visibleWidgets={visibleWidgets}
         widgetLayouts={widgetLayouts}
@@ -1836,9 +1834,10 @@ const UserDashboard = ({ hideHeader = false }: UserDashboardProps) => {
         onWidgetRemove={handleWidgetRemove}
         renderWidget={renderWidget}
         containerWidth={containerWidth}
-      />
+        />
+      </div>
       
-      {/* Modals */}
+      {/* Modals - outside scrollable area */}
       <TaskModal
         open={taskModalOpen}
         onOpenChange={(open) => { setTaskModalOpen(open); if (!open) setSelectedTask(null); }}
