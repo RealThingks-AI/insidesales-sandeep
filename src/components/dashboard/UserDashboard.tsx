@@ -1750,7 +1750,7 @@ const UserDashboard = ({ hideHeader = false }: UserDashboardProps) => {
   return (
     <div className="flex flex-col h-full overflow-hidden" ref={containerRef}>
       {/* Search bar header - stays fixed at top, never scrolls */}
-      <div className="flex-shrink-0 px-2 sm:px-4 py-3 border-b border-border/50 bg-background flex items-center justify-between flex-wrap gap-4">
+      <div className="flex-shrink-0 px-2 sm:px-4 py-3 bg-background flex items-center justify-between flex-wrap gap-4">
         {/* Global Search - Left Side */}
         <div className="flex-1 max-w-md">
           <GlobalSearch />
