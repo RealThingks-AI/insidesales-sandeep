@@ -298,7 +298,7 @@ export function GlobalSearch() {
               No results found for "{query}"
             </div>
           ) : (
-            <ScrollArea className="max-h-80">
+            <div className="max-h-80 overflow-y-auto">
               {Object.entries(groupedResults).map(([type, items]) => {
                 const config = typeConfig[type as keyof typeof typeConfig];
                 const Icon = config.icon;
@@ -332,7 +332,7 @@ export function GlobalSearch() {
                   </div>
                 );
               })}
-            </ScrollArea>
+            </div>
           )}
         </div>
       )}
