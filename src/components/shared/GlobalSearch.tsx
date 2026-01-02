@@ -266,7 +266,7 @@ export function GlobalSearch() {
         <Input
           ref={inputRef}
           type="text"
-          placeholder="Search everything... (⌘K)"
+          placeholder="Search anything..."
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
