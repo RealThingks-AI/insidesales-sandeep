@@ -27,6 +27,7 @@ import { AccountModal } from "@/components/AccountModal";
 import { useTasks } from "@/hooks/useTasks";
 import { Task } from "@/types/task";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { GlobalSearch } from "@/components/shared/GlobalSearch";
 
 const GRID_COLS = 12;
 
@@ -1749,7 +1750,13 @@ const UserDashboard = ({ hideHeader = false }: UserDashboardProps) => {
   return (
     <div className="px-2 sm:px-4 py-4 space-y-4 w-full overflow-x-hidden" ref={containerRef}>
       {/* Customize Controls - shown at top when hideHeader is true, otherwise part of header */}
-      <div className="flex items-center justify-end flex-wrap gap-2">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        {/* Global Search - Left Side */}
+        <div className="flex-1 max-w-md">
+          <GlobalSearch />
+        </div>
+        
+        {/* Customize Controls - Right Side */}
         <div className="flex gap-2 flex-shrink-0 items-center">
           {isResizeMode ? (
             <>
