@@ -1749,8 +1749,8 @@ const UserDashboard = ({ hideHeader = false }: UserDashboardProps) => {
 
   return (
     <div className="px-2 sm:px-4 py-4 space-y-4 w-full overflow-x-hidden" ref={containerRef}>
-      {/* Customize Controls - shown at top when hideHeader is true, otherwise part of header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      {/* Customize Controls - sticky header */}
+      <div className="flex items-center justify-between flex-wrap gap-4 sticky top-0 z-40 bg-background py-2 -mt-2 border-b border-border/50">
         {/* Global Search - Left Side */}
         <div className="flex-1 max-w-md">
           <GlobalSearch />
