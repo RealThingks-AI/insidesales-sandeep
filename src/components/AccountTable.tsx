@@ -81,7 +81,7 @@ const AccountTable = forwardRef<AccountTableRef, AccountTableProps>(({
 }, ref) => {
   const { toast } = useToast();
   const { logDelete } = useCRUDAudit();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [filteredAccounts, setFilteredAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
@@ -147,6 +147,23 @@ const AccountTable = forwardRef<AccountTableRef, AccountTableProps>(({
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [viewingAccount, setViewingAccount] = useState<Account | null>(null);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
+  // Handle viewId from URL (from global search)
+  const viewId = searchParams.get('viewId');
+  useEffect(() => {
+    if (viewId && accounts.length > 0) {
+      const accountToView = accounts.find(a => a.id === viewId);
+      if (accountToView) {
+        setViewingAccount(accountToView);
+        setShowDetailModal(true);
+        // Clear the viewId from URL after opening
+        setSearchParams(prev => {
+          prev.delete('viewId');
+          return prev;
+        }, { replace: true });
+      }
+    }
+  }, [viewId, accounts, setSearchParams]);
 
   // Expose handleBulkDelete to parent via ref
   useImperativeHandle(ref, () => ({

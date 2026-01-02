@@ -189,6 +189,23 @@ const LeadTable = forwardRef<LeadTableRef, LeadTableProps>(({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
   
+  // Handle viewId from URL (from global search)
+  const viewId = searchParams.get('viewId');
+  useEffect(() => {
+    if (viewId && leads.length > 0) {
+      const leadToView = leads.find(l => l.id === viewId);
+      if (leadToView) {
+        setViewingLead(leadToView);
+        setShowDetailModal(true);
+        // Clear the viewId from URL after opening
+        setSearchParams(prev => {
+          prev.delete('viewId');
+          return prev;
+        }, { replace: true });
+      }
+    }
+  }, [viewId, leads, setSearchParams]);
+  
   // Column preferences hook
   const { columns, saveColumns, isSaving } = useColumnPreferences({
     moduleName: 'leads',
