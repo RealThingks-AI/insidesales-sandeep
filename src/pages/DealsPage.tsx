@@ -49,6 +49,23 @@ const DealsPage = () => {
     }
   }, [searchParams]);
 
+  // Handle viewId from URL (from global search)
+  useEffect(() => {
+    const viewId = searchParams.get('viewId');
+    if (viewId && deals.length > 0) {
+      const dealToView = deals.find(d => d.id === viewId);
+      if (dealToView) {
+        setSelectedDeal(dealToView);
+        setIsCreating(false);
+        setIsFormOpen(true);
+        // Clear the viewId from URL after opening
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('viewId');
+        navigate(`/deals?${newParams.toString()}`, { replace: true });
+      }
+    }
+  }, [searchParams, deals, navigate]);
+
   // Filter deals by owner when owner=me
   useEffect(() => {
     if (ownerParam === 'me' && user?.id) {

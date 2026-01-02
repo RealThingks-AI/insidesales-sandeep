@@ -63,6 +63,7 @@ const Meetings = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
+  const [viewingMeetingId, setViewingMeetingId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [meetingToDelete, setMeetingToDelete] = useState<string | null>(null);
   const [selectedMeetings, setSelectedMeetings] = useState<string[]>([]);
@@ -104,6 +105,23 @@ const Meetings = () => {
       setStatusFilter(urlStatus);
     }
   }, [searchParams]);
+
+  // Handle viewId from URL (from global search)
+  useEffect(() => {
+    const viewId = searchParams.get('viewId');
+    if (viewId && meetings.length > 0) {
+      const meetingToView = meetings.find(m => m.id === viewId);
+      if (meetingToView) {
+        setEditingMeeting(meetingToView);
+        setShowModal(true);
+        // Clear the viewId from URL after opening
+        setSearchParams(prev => {
+          prev.delete('viewId');
+          return prev;
+        }, { replace: true });
+      }
+    }
+  }, [searchParams, meetings, setSearchParams]);
 
   // Fetch all profiles for organizer dropdown
   const { data: allProfiles = [] } = useQuery({

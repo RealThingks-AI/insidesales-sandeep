@@ -98,7 +98,7 @@ export function GlobalSearch() {
           title: l.lead_name,
           subtitle: l.company_name || l.email || undefined,
           type: 'lead' as const,
-          route: `/leads?search=${encodeURIComponent(l.lead_name)}`,
+          route: `/leads?viewId=${l.id}`,
         })));
       }
 
@@ -115,7 +115,7 @@ export function GlobalSearch() {
           title: c.contact_name,
           subtitle: c.company_name || c.email || undefined,
           type: 'contact' as const,
-          route: `/contacts?search=${encodeURIComponent(c.contact_name)}`,
+          route: `/contacts?viewId=${c.id}`,
         })));
       }
 
@@ -132,7 +132,7 @@ export function GlobalSearch() {
           title: d.deal_name,
           subtitle: d.customer_name || d.stage || undefined,
           type: 'deal' as const,
-          route: `/deals?search=${encodeURIComponent(d.deal_name)}`,
+          route: `/deals?viewId=${d.id}`,
         })));
       }
 
@@ -149,7 +149,7 @@ export function GlobalSearch() {
           title: a.company_name,
           subtitle: a.industry || a.email || undefined,
           type: 'account' as const,
-          route: `/accounts?search=${encodeURIComponent(a.company_name)}`,
+          route: `/accounts?viewId=${a.id}`,
         })));
       }
 
@@ -166,7 +166,7 @@ export function GlobalSearch() {
           title: m.subject,
           subtitle: m.description?.substring(0, 50) || undefined,
           type: 'meeting' as const,
-          route: `/meetings?search=${encodeURIComponent(m.subject)}`,
+          route: `/meetings?viewId=${m.id}`,
         })));
       }
 
@@ -183,7 +183,7 @@ export function GlobalSearch() {
           title: t.title,
           subtitle: t.status || t.description?.substring(0, 50) || undefined,
           type: 'task' as const,
-          route: `/tasks?search=${encodeURIComponent(t.title)}`,
+          route: `/tasks?viewId=${t.id}`,
         })));
       }
 

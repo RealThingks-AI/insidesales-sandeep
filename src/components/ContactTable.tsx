@@ -92,7 +92,7 @@ export const ContactTable = forwardRef<ContactTableRef, ContactTableProps>(({
 }, ref) => {
   const { toast } = useToast();
   const { logDelete, logBulkDelete } = useCRUDAudit();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [filteredContacts, setFilteredContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,6 +161,23 @@ export const ContactTable = forwardRef<ContactTableRef, ContactTableProps>(({
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<string | null>(null);
+  
+  // Handle viewId from URL (from global search)
+  const viewId = searchParams.get('viewId');
+  useEffect(() => {
+    if (viewId && contacts.length > 0) {
+      const contactToView = contacts.find(c => c.id === viewId);
+      if (contactToView) {
+        setViewingContact(contactToView);
+        setShowDetailModal(true);
+        // Clear the viewId from URL after opening
+        setSearchParams(prev => {
+          prev.delete('viewId');
+          return prev;
+        }, { replace: true });
+      }
+    }
+  }, [viewId, contacts, setSearchParams]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
   const [sortField, setSortField] = useState<string | null>(null);
